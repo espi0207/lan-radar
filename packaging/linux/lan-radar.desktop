@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=lan-radar
+GenericName=Aparatos de la red
+Comment=Quién está conectado a tu wifi, y todo lo que cuenta cada aparato de sí mismo
+Exec=lan-radar-app
+Icon=lan-radar
+Terminal=false
+Categories=Network;Utility;
+Keywords=wifi;red;aparatos;router;dispositivos;intrusos;
