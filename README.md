@@ -10,7 +10,7 @@ modelo, el sistema, lo que sabe hacer... Y con eso adivina qué es (móvil, tele
 impresora, cámara...) y te dice por qué lo cree.
 
 Además se acuerda de lo que ha visto: te avisa de los aparatos **nuevos**, te dice cuáles
-estaban otras veces y ahora no, y puedes ponerles nombre ("Enchufe de la cafetera") para
+estaban otras veces y ahora no, y puedes ponerles nombre ("MI pc") para
 reconocerlos la próxima vez.
 
 ![La ventana de lan-radar con una red de casa](docs/ventana.png)
