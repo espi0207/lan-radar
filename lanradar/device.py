@@ -300,6 +300,11 @@ def classify(device: Device) -> None:
         if names and re.search(pattern, names, re.I):
             ev.add(kind, weight, f"por su nombre («{_first_match(pattern, names)}»)")
 
+    page = " ".join(f"{w.get('title', '')} {w.get('server', '')}" for w in device.web.values()).strip()
+    for pattern, kind, weight in catalog.WEB_HINTS:
+        if page and re.search(pattern, page, re.I):
+            ev.add(kind, weight, f"por su página de configuración («{_first_match(pattern, page)}»)")
+
     if device.netbios_name:
         ev.add(COMPUTER, 35, f"tiene nombre de red de Windows ({device.netbios_name})")
     if device.brand in catalog.VENDOR_HINTS:
