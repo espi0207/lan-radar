@@ -294,3 +294,22 @@ def test_ssdp_con_sockets_y_ficha_de_verdad():
         server.shutdown()
     info = found[ipaddress.IPv4Address("127.0.0.1")]
     assert info.server == "Linux/4.1 UPnP/1.0" and info.devices[0].manufacturer == "Samsung Electronics"
+
+
+def test_txt_string_longer_than_the_record_is_a_bad_packet():
+    header = struct.pack("!HHHHHH", 0, 0x8400, 0, 1, 0, 0)
+    record = b"\x00" + struct.pack("!HHIH", dns.TXT, 1, 120, 4) + b"\xffa=b"  # dice 255 bytes y trae 3
+    with pytest.raises(dns.BadPacket):
+        dns.parse(header + record)
+
+
+def test_page_title_is_found_in_linear_time():
+    import time
+
+    from lanradar.probe import page_title
+
+    assert page_title(b"<html><TITLE id=x> HP LaserJet </title>") == b" HP LaserJet "
+    assert page_title(b"<title>sin cerrar") is None
+    start = time.perf_counter()
+    page_title(b"<title>" * 9000)  # 63 KB de <title> sin cerrar: antes, tiempo cuadrático
+    assert time.perf_counter() - start < 0.05
