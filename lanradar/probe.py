@@ -15,7 +15,6 @@ from __future__ import annotations
 import html
 import http.client
 import ipaddress
-import re
 import socket
 import ssl
 
@@ -25,7 +24,6 @@ from .catalog import PORTS
 BANNER_PORTS = {21, 22}
 # 7000: el receptor de AirPlay contesta con «Server: AirTunes/…» (Mac o Apple TV).
 HTTP_PORTS = {80: False, 8080: False, 443: True, 8443: True, 5000: False, 5001: True, 7000: False}
-_TITLE = re.compile(rb"<title[^>]*>(.*?)</title>", re.I | re.S)
 
 
 def is_open(ip: str, port: int, timeout: float = 1.0) -> bool:
@@ -80,13 +78,24 @@ def http_info(ip: str, port: int, tls: bool, timeout: float = 3.0) -> dict[str, 
             info["server"] = _printable(server)
         if location := response.getheader("Location"):
             info["location"] = _printable(location)
-        if m := _TITLE.search(body):
-            title = html.unescape(m.group(1).decode("utf-8", errors="replace"))
+        if (raw := page_title(body)) is not None:
+            title = html.unescape(raw.decode("utf-8", errors="replace"))
             if title := " ".join(title.split()):
                 info["title"] = _printable(title)
         return info
     finally:
         conn.close()
+
+
+def page_title(body: bytes) -> bytes | None:
+    """Lo que hay entre <title ...> y </title>. Con find y no con una expresión regular:
+    una página llena de <title> sin cerrar hacía que la regex tardase en proporción al
+    cuadrado de su tamaño."""
+    low = body.lower()
+    start = low.find(b"<title")
+    opened = low.find(b">", start) if start >= 0 else -1
+    end = low.find(b"</title>", opened) if opened >= 0 else -1
+    return body[opened + 1 : end] if end >= 0 else None
 
 
 def _printable(text: str) -> str:

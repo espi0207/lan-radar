@@ -104,20 +104,22 @@ def _rdata(data: bytes, rtype: int, start: int, length: int) -> object:
         priority, weight, port = struct.unpack("!HHH", raw[:6])
         return (priority, weight, port, read_name(data, start + 6)[0])
     if rtype == TXT:
-        strings, i = [], 0
-        while i < len(raw):
-            n = raw[i]
-            strings.append(raw[i + 1 : i + 1 + n].decode("utf-8", errors="replace"))
-            i += 1 + n
-        return strings
+        return _strings(raw)
     if rtype == HINFO:
-        parts, i = [], 0
-        while i < len(raw) and len(parts) < 2:
-            n = raw[i]
-            parts.append(raw[i + 1 : i + 1 + n].decode("utf-8", errors="replace"))
-            i += 1 + n
-        return parts
+        return _strings(raw)[:2]
     return raw
+
+
+def _strings(raw: bytes) -> list[str]:
+    """Cadenas de un TXT o un HINFO: cada una con su longitud delante, que no se puede salir."""
+    strings, i = [], 0
+    while i < len(raw):
+        n = raw[i]
+        if i + 1 + n > len(raw):
+            raise BadPacket("cadena más larga que el registro")
+        strings.append(raw[i + 1 : i + 1 + n].decode("utf-8", errors="replace"))
+        i += 1 + n
+    return strings
 
 
 def parse(data: bytes) -> Message:
