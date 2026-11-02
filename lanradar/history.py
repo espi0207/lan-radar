@@ -10,6 +10,7 @@ reconoce por la MAC de su router; si no se sabe, por su dirección.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import sys
@@ -32,6 +33,15 @@ def data_dir() -> Path:
     return Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share") / "lan-radar"
 
 
+def _within(ip, network) -> bool:
+    if network is None or not ip:
+        return True
+    try:
+        return ipaddress.ip_address(ip) in network
+    except ValueError:
+        return True
+
+
 def network_key(network: str, gateway_mac: str = "") -> str:
     return f"router:{gateway_mac}" if gateway_mac else f"red:{network}"
 
@@ -50,9 +60,12 @@ class History:
     def network(self, key: str) -> dict:
         return self.data["networks"].setdefault(key, {"label": "", "scans": 0, "devices": {}})
 
-    def record(self, key: str, label: str, devices: list[Device], when: datetime | None = None) -> list[dict]:
+    def record(
+        self, key: str, label: str, devices: list[Device], when: datetime | None = None, network=None
+    ) -> list[dict]:
         """Apunta lo visto en esta pasada: marca los nuevos y les pone el nombre que les
-        diste. Devuelve los que se habían visto antes y ahora no están."""
+        diste. Devuelve los que se habían visto antes y ahora no están (con `network`, solo
+        los de esa red: si se revisa un trozo, lo de fuera no ha «desaparecido»)."""
         when_text = (when or datetime.now()).isoformat(timespec="seconds")
         net = self.network(key)
         known = net["devices"]
@@ -76,7 +89,7 @@ class History:
                 name=device.name(),
                 brand=device.brand,
             )
-        missing = [dict(v, key=k) for k, v in known.items() if k not in seen]
+        missing = [dict(v, key=k) for k, v in known.items() if k not in seen and _within(v.get("ip"), network)]
         missing.sort(key=lambda v: v.get("last_seen", ""), reverse=True)
         net["label"] = label
         net["scans"] += 1
