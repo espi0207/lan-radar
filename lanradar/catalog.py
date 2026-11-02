@@ -294,3 +294,16 @@ NAME_HINTS: list[tuple[str, str, int]] = [
     ),
     (r"repeater|repetidor|extender|mesh|deco-|eero|\bap\b", ACCESS_POINT, 40),
 ]
+
+
+# Pistas en la página de configuración (el <title> y la cabecera Server). Más corta que
+# NAME_HINTS a propósito: en un título salen palabras como «switch» o «mesh» que no dicen
+# nada del aparato, así que solo van marcas y productos que se reconocen sin dudas.
+WEB_HINTS: list[tuple[str, str, int]] = [
+    (r"laserjet|deskjet|officejet|envy|epson|brother|canon|\bprinter\b|impresora", PRINTER, 45),
+    (r"hikvision|reolink|ezviz|dahua|ipcam|network camera|webcam|foscam", CAMERA, 45),
+    (r"synology|diskstation|qnap|truenas|openmediavault|unraid", NAS, 45),
+    (r"tasmota|shelly|wled|esphome|home assistant|sonoff", SMART_HOME, 45),
+    (r"fritz!?box|livebox|router|openwrt|dd-wrt|pfsense|opnsense|mikrotik|routeros", ROUTER, 40),
+    (r"repeater|repetidor|range extender", ACCESS_POINT, 40),
+]
