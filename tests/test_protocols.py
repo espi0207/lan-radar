@@ -313,3 +313,20 @@ def test_page_title_is_found_in_linear_time():
     start = time.perf_counter()
     page_title(b"<title>" * 9000)  # 63 KB de <title> sin cerrar: antes, tiempo cuadrático
     assert time.perf_counter() - start < 0.05
+
+
+def test_sleep_proxy_model_goes_to_the_sleeping_mac():
+    # El Apple TV (.31) contesta por el Mac dormido (.35): el modelo es del Mac, no del Apple TV.
+    collector = mdns.Collector(ipaddress.ip_network("192.168.1.0/24"))
+    proxy = response(
+        [
+            rr("Mac de Pablo._smb._tcp.local", dns.SRV, struct.pack("!HHH", 0, 0, 445) + dns.encode_name("mac.local")),
+            rr("mac.local", dns.A, socket.inet_aton("192.168.1.35")),
+            rr("Mac de Pablo._device-info._tcp.local", dns.TXT, txt("model=MacBookAir10,1")),
+        ]
+    )
+    collector.handle("192.168.1.31", 5353, proxy)
+    found = collector.result()
+    ip = ipaddress.IPv4Address
+    assert found[ip("192.168.1.35")].model == "MacBookAir10,1"
+    assert ip("192.168.1.31") not in found or not found[ip("192.168.1.31")].model
