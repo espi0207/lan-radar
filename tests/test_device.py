@@ -8,6 +8,7 @@ from lanradar.catalog import (
     COMPUTER,
     CONSOLE,
     MOBILE,
+    NAS,
     PRINTER,
     ROUTER,
     SMART_HOME,
@@ -186,3 +187,21 @@ def test_mac_compartida_por_un_repetidor():
     device.shared_mac = True
     assert device.key() == "00:0E:59:3A:7B:01@192.168.1.80"
     assert any("repetidor" in n["text"] for n in observations(device))
+
+
+@pytest.mark.parametrize(
+    "title, server, kind",
+    [
+        ("HP LaserJet M110w", "", PRINTER),
+        ("Synology DiskStation", "nginx", NAS),
+        ("Tasmota", "", SMART_HOME),
+        ("", "Hikvision-Webs", CAMERA),
+    ],
+)
+def test_the_web_page_helps_to_identify_the_device(title, server, kind):
+    from lanradar.device import Device, finish
+
+    web = {"title": title, "server": server} if title else {"server": server}
+    device = finish(Device(ip="192.168.1.30", ports=[80], web={"80": {k: v for k, v in web.items() if v}}))
+    assert device.kind == kind
+    assert any("página" in r for r in device.reasons)

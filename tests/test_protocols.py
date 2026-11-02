@@ -294,3 +294,39 @@ def test_ssdp_con_sockets_y_ficha_de_verdad():
         server.shutdown()
     info = found[ipaddress.IPv4Address("127.0.0.1")]
     assert info.server == "Linux/4.1 UPnP/1.0" and info.devices[0].manufacturer == "Samsung Electronics"
+
+
+def test_txt_string_longer_than_the_record_is_a_bad_packet():
+    header = struct.pack("!HHHHHH", 0, 0x8400, 0, 1, 0, 0)
+    record = b"\x00" + struct.pack("!HHIH", dns.TXT, 1, 120, 4) + b"\xffa=b"  # dice 255 bytes y trae 3
+    with pytest.raises(dns.BadPacket):
+        dns.parse(header + record)
+
+
+def test_page_title_is_found_in_linear_time():
+    import time
+
+    from lanradar.probe import page_title
+
+    assert page_title(b"<html><TITLE id=x> HP LaserJet </title>") == b" HP LaserJet "
+    assert page_title(b"<title>sin cerrar") is None
+    start = time.perf_counter()
+    page_title(b"<title>" * 9000)  # 63 KB de <title> sin cerrar: antes, tiempo cuadrático
+    assert time.perf_counter() - start < 0.05
+
+
+def test_sleep_proxy_model_goes_to_the_sleeping_mac():
+    # El Apple TV (.31) contesta por el Mac dormido (.35): el modelo es del Mac, no del Apple TV.
+    collector = mdns.Collector(ipaddress.ip_network("192.168.1.0/24"))
+    proxy = response(
+        [
+            rr("Mac de Pablo._smb._tcp.local", dns.SRV, struct.pack("!HHH", 0, 0, 445) + dns.encode_name("mac.local")),
+            rr("mac.local", dns.A, socket.inet_aton("192.168.1.35")),
+            rr("Mac de Pablo._device-info._tcp.local", dns.TXT, txt("model=MacBookAir10,1")),
+        ]
+    )
+    collector.handle("192.168.1.31", 5353, proxy)
+    found = collector.result()
+    ip = ipaddress.IPv4Address
+    assert found[ip("192.168.1.35")].model == "MacBookAir10,1"
+    assert ip("192.168.1.31") not in found or not found[ip("192.168.1.31")].model

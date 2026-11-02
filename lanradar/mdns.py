@@ -67,6 +67,7 @@ class Collector:
         self.types: dict[ipaddress.IPv4Address, set[str]] = {}
         self.host_ip: dict[str, ipaddress.IPv4Address] = {}  # «iphone-de-ana.local» → IP
         self.instances: dict[str, dict] = {}  # nombre completo en minúsculas → datos
+        self.models: dict[str, tuple] = {}  # nombre del aparato → (modelo, quién lo ha dicho)
 
     def info(self, ip) -> Info:
         return self.by_ip.setdefault(ip, Info())
@@ -116,9 +117,11 @@ class Collector:
         elif record.type == dns.TXT and isinstance(record.data, list):
             label, stype = _split_instance(name)
             if stype == "_device-info._tcp":
+                # Se reparte al final: quien contesta puede ser un «sleep proxy» (un Apple TV
+                # que responde por un Mac dormido) y el modelo es del aparato con ese nombre.
                 model = dns.txt_dict(record.data).get("model", "")
                 if model:
-                    self.info(source).model = model
+                    self.models[label.lower()] = (model, source)
             elif stype:
                 entry = self.instances.setdefault(lname, {"name": label, "type": stype})
                 entry.setdefault("source", source)
@@ -135,6 +138,17 @@ class Collector:
             if any(s.type == entry["type"] and s.name == entry["name"] for s in info.services):
                 continue
             info.services.append(Service(entry["type"], entry["name"], entry.get("port", 0), entry.get("txt", {})))
+        for label, (model, source) in self.models.items():
+            # La IP del aparato que anuncia otros servicios con ese mismo nombre, si se sabe.
+            owner = next(
+                (
+                    self.host_ip[e["target"]]
+                    for e in self.instances.values()
+                    if e["name"].lower() == label and e.get("target") in self.host_ip
+                ),
+                source,
+            )
+            self.info(owner).model = model
         for info in self.by_ip.values():
             info.services.sort(key=lambda s: (s.type, s.name))
         return {ip: info for ip, info in self.by_ip.items() if info.hostname or info.services or info.model}

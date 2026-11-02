@@ -95,10 +95,17 @@ def scan(
     answers = parallel.run(lambda name: jobs[name](), list(jobs), workers=3, timeout=timing.ssdp + 12)
     found_mdns, found_ssdp, found_dns = answers.get("mdns", {}), answers.get("ssdp", {}), answers.get("dns", {})
     alive |= (set(found_mdns) | set(found_ssdp)) & set(targets)
-    hosts = sorted(alive)
-    for ip, mac in arp.table().items():  # los que no estaban en la tabla y han contestado ahora
+    now = arp.table()
+    for ip, mac in now.items():  # los que no estaban en la tabla y han contestado ahora
         if ip in alive and ip not in macs:
             macs[ip] = mac
+    if now:
+        # La caché ARP guarda durante minutos aparatos que ya se han ido. Tras preguntar a toda
+        # la red, el sistema ha vuelto a buscarlos: el que ya no sale y no ha contestado a nada
+        # más no está conectado. (Si la tabla sale vacía, es que no se ha podido leer: no se toca.)
+        answered = set(names_nb) | set(found_mdns) | set(found_ssdp) | {local.address, local.gateway}
+        alive = {ip for ip in alive if ip in now or ip in answered}
+    hosts = sorted(alive)
 
     # 3. Qué hace cada uno
     ports, banners, pages = {}, {}, {}
@@ -154,7 +161,7 @@ def scan(
         devices=devices,
     )
     if history is not None:
-        result.missing = history.record(key, str(local.network), devices, started)
+        result.missing = history.record(key, str(local.network), devices, started, network=local.network)
         result.first_scan = history.is_first_scan(key)
         for device in devices:
             device.notes = observations(device)  # ahora que se sabe cuáles son nuevos
