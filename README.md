@@ -107,13 +107,20 @@ lo pregunte, porque es así como se encuentran entre ellos.
 | **UPnP / SSDP** | La ficha de teles, routers, altavoces y consolas: nombre, fabricante, modelo y tipo de aparato. |
 | **NetBIOS** | El nombre de los ordenadores con Windows (`PORTATIL-ANA`) y su grupo de trabajo. |
 | **El DNS del router** | El nombre con el que se presentó cada aparato al conectarse (`Galaxy-S23.home`). |
-| **25 puertos conocidos** | Si están abiertos: 631 es una impresora, 62078 un iPhone o iPad, 8009 un Chromecast, 554 una cámara... Solo se abre la conexión y se cierra. |
+| **39 puertos conocidos** | Si están abiertos: 631 es una impresora, 62078 un iPhone o iPad, 8009 un Chromecast, 554 una cámara, 8006 un Proxmox, 6668 un enchufe de Tuya... Solo se abre la conexión y se cierra. |
 | **Saludos y páginas web** | Lo que dice SSH al conectar (`OpenSSH_9.2p1 Debian`: el sistema), el título de la página de configuración ("HP LaserJet M110w") y el servidor que la sirve. |
 
 Con todo eso decide qué es cada aparato sumando pistas: el puerto 62078 suma para
 "móvil", la marca Brother para "impresora", que se llame `PS5-de-Pablo` para "consola"...
 Gana el tipo con más puntos, y lan-radar dice cuánto se fía (*seguro*, *probable* o
-*puede*) y qué pistas ha usado. Un modelo de iPhone se traduce a su nombre comercial
+*puede*) y qué pistas ha usado.
+
+Los tipos: router, móvil, tableta, ordenador, servidor, máquina virtual, televisor,
+reproductor multimedia, altavoz, impresora, cámara, consola, disco en red (NAS),
+domótica, reloj, repetidor, robot aspirador y electrodoméstico (lavadoras, hornos,
+aires acondicionados...). Las máquinas virtuales se reconocen por la MAC que les pone
+VMware, VirtualBox, QEMU/KVM, Hyper-V, Parallels o Xen; la de QEMU parece una MAC privada
+de móvil, pero no lo es. Un modelo de iPhone se traduce a su nombre comercial
 (`iPhone15,2` es un iPhone 14 Pro) del iPhone 11 al 16.
 
 ### Los avisos
@@ -121,10 +128,12 @@ Gana el tipo con más puntos, y lan-radar dice cuánto se fía (*seguro*, *proba
 Para lo que conviene revisar, en palabras normales:
 
 - **Importante**: Telnet abierto (se entra sin cifrar, a menudo con la contraseña de
-  fábrica). Le pasa a cámaras y routers baratos.
+  fábrica). Le pasa a cámaras y routers baratos. Y ADB abierto en un Android (la
+  depuración por red): cualquiera en la wifi puede instalarle apps y manejarlo.
 - **Conviene revisarlo**: UPnP activado en el router (cualquier aparato de casa puede
   abrir puertos hacia Internet sin preguntar), FTP, Escritorio remoto de Windows o VNC
-  activados.
+  activados, grabadores y cámaras chinas con sus puertos de fábrica (XMEye, Dahua) y
+  bases de datos abiertas a toda la red (MySQL, PostgreSQL, Redis, MongoDB).
 - **Bueno saberlo**: la configuración del router sin cifrar, cámaras que emiten por RTSP,
   MQTT, aparatos que no cuentan nada de sí mismos, domótica barata que no se actualiza...
 - **Nuevo**: no estaba la última vez que miraste.
