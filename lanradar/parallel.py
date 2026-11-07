@@ -21,9 +21,10 @@ def run(func: Callable, items: Iterable, workers: int = 32, timeout: float = 30.
         todo.put(item)
     results: dict = {}
     lock = threading.Lock()
+    stop = threading.Event()  # pasado el límite, nadie empieza trabajo nuevo
 
     def worker():
-        while True:
+        while not stop.is_set():
             try:
                 item = todo.get_nowait()
             except queue.Empty:
@@ -33,7 +34,8 @@ def run(func: Callable, items: Iterable, workers: int = 32, timeout: float = 30.
             except Exception:  # un aparato que contesta algo raro no para a los demás
                 continue
             with lock:
-                results[item] = value
+                if not stop.is_set():
+                    results[item] = value
 
     threads = [threading.Thread(target=worker, daemon=True) for _ in range(min(workers, len(items)))]
     for thread in threads:
@@ -42,4 +44,5 @@ def run(func: Callable, items: Iterable, workers: int = 32, timeout: float = 30.
     for thread in threads:
         thread.join(max(0.0, deadline - time.monotonic()))
     with lock:
+        stop.set()
         return dict(results)

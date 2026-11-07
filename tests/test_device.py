@@ -205,3 +205,22 @@ def test_the_web_page_helps_to_identify_the_device(title, server, kind):
     device = finish(Device(ip="192.168.1.30", ports=[80], web={"80": {k: v for k, v in web.items() if v}}))
     assert device.kind == kind
     assert any("página" in r for r in device.reasons)
+
+
+def test_el_apodo_no_se_pierde_cuando_la_mac_pasa_a_estar_compartida(tmp_path):
+    # Primero el aparato tiene su MAC él solo; luego se conecta por un repetidor que contesta
+    # por él y por otro con la misma MAC: la clave cambia de «MAC» a «MAC@IP».
+    history = History(tmp_path / "h.json")
+    net = network_key("192.168.1.0/24")
+    first = Device("192.168.1.34", "AA:BB:CC:00:11:22")
+    history.record(net, "casa", [first])
+    history.rename(net, first.key(), "La Thermomix")
+    again = Device("192.168.1.34", "AA:BB:CC:00:11:22", shared_mac=True)
+    other = Device("192.168.1.35", "AA:BB:CC:00:11:22", shared_mac=True)
+    missing = history.record(net, "casa", [again, other])
+    assert again.nickname == "La Thermomix" and not again.is_new
+    assert missing == []  # no sale como desaparecido
+    # Y al revés: deja de estar compartida.
+    alone = Device("192.168.1.34", "AA:BB:CC:00:11:22")
+    history.record(net, "casa", [alone])
+    assert alone.nickname == "La Thermomix"

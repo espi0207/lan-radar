@@ -42,6 +42,17 @@ def _within(ip, network) -> bool:
         return True
 
 
+def _previous_key(device: Device, known: dict) -> str | None:
+    if not device.mac:
+        return None
+    candidates = [device.mac] if device.shared_mac else [f"{device.mac}@{device.ip}"]
+    for candidate in candidates:
+        entry = known.get(candidate)
+        if entry is not None and (not device.shared_mac or entry.get("ip") == device.ip):
+            return candidate
+    return None
+
+
 def network_key(network: str, gateway_mac: str = "") -> str:
     return f"router:{gateway_mac}" if gateway_mac else f"red:{network}"
 
@@ -75,6 +86,10 @@ class History:
             k = device.key()
             seen.add(k)
             entry = known.get(k)
+            if entry is None and (old := _previous_key(device, known)):
+                # El mismo aparato con la otra forma de clave (su MAC sola, o MAC@IP si ahora
+                # la comparte con otro por un repetidor): se lleva el apodo y su historia.
+                entry = known[k] = known.pop(old)
             if entry is None:
                 device.is_new = not first_time
                 entry = known[k] = {"first_seen": when_text}
