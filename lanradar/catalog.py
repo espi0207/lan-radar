@@ -22,6 +22,10 @@ NAS = "Disco en red (NAS)"
 SMART_HOME = "Domótica"
 WATCH = "Reloj"
 ACCESS_POINT = "Repetidor o punto de acceso"
+VACUUM = "Robot aspirador"
+APPLIANCE = "Electrodoméstico"
+SERVER = "Servidor"
+VM = "Máquina virtual"
 UNKNOWN = "Desconocido"
 
 KINDS = [
@@ -39,6 +43,10 @@ KINDS = [
     SMART_HOME,
     WATCH,
     ACCESS_POINT,
+    VACUUM,
+    APPLIANCE,
+    SERVER,
+    VM,
 ]
 
 # Para los resúmenes: «1 móvil», «3 móviles».
@@ -57,6 +65,10 @@ NAMES = {
     SMART_HOME: ("aparato de domótica", "aparatos de domótica"),
     WATCH: ("reloj", "relojes"),
     ACCESS_POINT: ("repetidor", "repetidores"),
+    VACUUM: ("robot aspirador", "robots aspiradores"),
+    APPLIANCE: ("electrodoméstico", "electrodomésticos"),
+    SERVER: ("servidor", "servidores"),
+    VM: ("máquina virtual", "máquinas virtuales"),
     UNKNOWN: ("sin identificar", "sin identificar"),
 }
 
@@ -117,6 +129,13 @@ SERVICES: dict[str, tuple[str, str | None, int]] = {
     "_octoprint._tcp": ("OctoPrint (impresora 3D)", None, 0),
     "_nvstream._tcp": ("NVIDIA GameStream (juegos en streaming)", COMPUTER, 30),
     "_elg._tcp": ("Elgato", SMART_HOME, 30),
+    "_ewelink._tcp": ("Sonoff / eWeLink (enchufe o relé)", SMART_HOME, 60),
+    "_dyson_mqtt._tcp": ("Dyson (ventilador o purificador)", SMART_HOME, 60),
+    "_xbmc-jsonrpc._tcp": ("Kodi (centro multimedia)", STREAMER, 45),
+    "_xbmc-jsonrpc-h._tcp": ("Kodi (centro multimedia)", STREAMER, 45),
+    "_rtsp._tcp": ("Emite vídeo en directo (RTSP)", CAMERA, 40),
+    "_ptp._tcp": ("Cámara de fotos (pasar fotos por wifi)", CAMERA, 30),
+    "_kdeconnect._udp": ("KDE Connect (móvil y ordenador enlazados)", None, 0),
 }
 
 # Los que se preguntan directamente a todos: hay aparatos que no contestan a "¿qué
@@ -174,6 +193,20 @@ PORTS: dict[int, tuple[str, str, str | None, int]] = {
     9100: ("Impresión directa", "impresora (JetDirect)", PRINTER, 50),
     32400: ("Plex", "servidor de películas y series", None, 0),
     62078: ("iPhone / iPad", "sincronización de un iPhone o iPad", MOBILE, 50),
+    515: ("LPD", "impresora (protocolo antiguo)", PRINTER, 40),
+    902: ("VMware ESXi", "servidor de máquinas virtuales de VMware", SERVER, 50),
+    1400: ("Sonos", "altavoz Sonos", SPEAKER, 50),
+    3306: ("MySQL", "base de datos", None, 0),
+    5432: ("PostgreSQL", "base de datos", None, 0),
+    5555: ("ADB", "depuración de Android por red", None, 0),
+    6379: ("Redis", "base de datos en memoria", None, 0),
+    6668: ("Tuya", "enchufe o bombilla de Tuya (Smart Life)", SMART_HOME, 50),
+    8006: ("Proxmox", "servidor de máquinas virtuales Proxmox", SERVER, 60),
+    8060: ("Roku", "reproductor Roku (control por red)", STREAMER, 50),
+    9999: ("TP-Link Kasa", "enchufe o bombilla Kasa de TP-Link", SMART_HOME, 50),
+    27017: ("MongoDB", "base de datos", None, 0),
+    34567: ("XMEye", "grabador o cámara china barata (DVR/NVR)", CAMERA, 60),
+    37777: ("Dahua", "cámara o grabador Dahua", CAMERA, 60),
 }
 
 # Marcas (tal como salen de oui.short_vendor) y qué suelen ser. Peso bajo: una marca hace
@@ -239,6 +272,22 @@ VENDOR_HINTS: dict[str, tuple[str, int]] = {
     "Lenovo": (COMPUTER, 20),
     "Microsoft": (COMPUTER, 15),
     "Intel": (COMPUTER, 25),
+    "Roborock": (VACUUM, 60),
+    "iRobot": (VACUUM, 60),
+    "Ecovacs": (VACUUM, 60),
+    "Dreame": (VACUUM, 60),
+    "Bosch-Siemens": (APPLIANCE, 60),
+    "Miele": (APPLIANCE, 60),
+    "Whirlpool": (APPLIANCE, 50),
+    "Haier": (APPLIANCE, 35),
+    "Daikin": (APPLIANCE, 50),
+    "Valve": (CONSOLE, 40),
+    "Vestel": (TV, 40),
+    "Philips TV": (TV, 50),
+    "Bose": (SPEAKER, 45),
+    "Dahua": (CAMERA, 45),
+    "Ring": (CAMERA, 45),
+    "ecobee": (SMART_HOME, 50),
 }
 
 # Fabricantes del chip de wifi, no del aparato: la marca de verdad es otra.
@@ -293,6 +342,17 @@ NAME_HINTS: list[tuple[str, str, int]] = [
         45,
     ),
     (r"repeater|repetidor|extender|mesh|deco-|eero|\bap\b", ACCESS_POINT, 40),
+    (r"roborock|roomba|irobot|ecovacs|deebot|dreame|conga|aspirador|vacuum|rockrobo|viomi", VACUUM, 55),
+    (
+        r"lavadora|lavavajillas|secadora|frigor[ií]fico|nevera|horno|microondas|washer|dryer|dishwasher|fridge|"
+        r"\boven\b|aire-?acondicionado|\bclima\b|thinq|home-?connect|bsh-|miele",
+        APPLIANCE,
+        50,
+    ),
+    (r"proxmox|\bpve\b|esxi|truenas-?scale|unraid|\bsrv\b|^srv-|servidor|server", SERVER, 40),
+    (r"steam-?deck|steamdeck", CONSOLE, 55),
+    (r"kindle|kobo|e-?reader", TABLET, 50),
+    (r"philips-?tv|androidtv|google-?tv|hisense|vidaa", TV, 40),
 ]
 
 
@@ -306,4 +366,19 @@ WEB_HINTS: list[tuple[str, str, int]] = [
     (r"tasmota|shelly|wled|esphome|home assistant|sonoff", SMART_HOME, 45),
     (r"fritz!?box|livebox|router|openwrt|dd-wrt|pfsense|opnsense|mikrotik|routeros", ROUTER, 40),
     (r"repeater|repetidor|range extender", ACCESS_POINT, 40),
+    (r"proxmox|vmware esxi|cockpit|webmin|portainer", SERVER, 45),
 ]
+
+# MAC que ponen los programas de máquinas virtuales a sus máquinas. La de QEMU/KVM
+# (52:54:00) está marcada como «administrada localmente», igual que las privadas de los
+# móviles, pero no es de un móvil.
+VM_PREFIXES = {
+    "00:50:56": "VMware",
+    "00:0C:29": "VMware",
+    "00:05:69": "VMware",
+    "08:00:27": "VirtualBox",
+    "52:54:00": "QEMU/KVM",
+    "00:15:5D": "Hyper-V",
+    "00:1C:42": "Parallels",
+    "00:16:3E": "Xen",
+}

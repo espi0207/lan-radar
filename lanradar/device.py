@@ -24,6 +24,7 @@ from .catalog import (
     TABLET,
     TV,
     UNKNOWN,
+    VM,
     WATCH,
 )
 from .oui import is_device, is_random, normalize, short_vendor
@@ -310,12 +311,20 @@ def classify(device: Device) -> None:
     if device.brand in catalog.VENDOR_HINTS:
         kind, weight = catalog.VENDOR_HINTS[device.brand]
         ev.add(kind, weight, f"lo fabrica {device.brand}")
+    if platform := vm_platform(device.mac):
+        # la MAC lo dice sin dudas: gana aunque por dentro sea un Windows con sus puertos de siempre
+        ev.add(VM, 150, f"su MAC es de las que pone {platform} a sus máquinas virtuales")
     if device.random_mac:
         ev.add(MOBILE, 20, "usa una MAC privada, como hacen los móviles y tabletas")
 
     device.kind, device.confidence, device.reasons = ev.decide()
     if device.is_gateway:
         device.confidence = "seguro"
+
+
+def vm_platform(mac: str) -> str:
+    """«08:00:27:…» → «VirtualBox»; cadena vacía si no es una MAC de máquina virtual."""
+    return catalog.VM_PREFIXES.get(normalize(mac)[:8], "") if mac else ""
 
 
 def _googlecast_kind(model: str) -> tuple[str, int]:
@@ -432,10 +441,11 @@ def finish(device: Device) -> Device:
     """Una vez juntadas todas las pistas: marca, modelo, nombre, tipo y avisos."""
     if not device.mac and (mac := mac_from_services(device)):
         device.mac = mac
+    platform = vm_platform(device.mac)
     if device.mac:
-        device.random_mac = is_random(device.mac)
+        device.random_mac = is_random(device.mac) and not platform  # la de QEMU parece privada y no lo es
         device.vendor = device.vendor or oui_vendor(device.mac)
-    device.brand = short_vendor(device.vendor)
+    device.brand = platform or short_vendor(device.vendor)
     describe(device)
     device.friendly_name = device.friendly_name or pick_friendly_name(device)
     classify(device)
@@ -466,6 +476,27 @@ def observations(device: Device) -> list[dict]:
             MEDIA,
             "Tiene el Escritorio remoto de Windows activado. Si no lo usas, desactívalo; y nunca lo "
             "abras hacia Internet.",
+        )
+    if 5555 in ports:
+        note(
+            ALTA,
+            "Tiene ADB abierto (la depuración de Android por red): cualquiera en tu wifi puede instalarle "
+            "apps y manejarlo sin pedir permiso. Desactiva la depuración en las opciones de desarrollador.",
+        )
+    if 34567 in ports or 37777 in ports:
+        port = 34567 if 34567 in ports else 37777
+        note(
+            MEDIA,
+            f"Tiene abierto el puerto {port}, el de los grabadores y cámaras chinas (XMEye, Dahua). Han tenido "
+            "fallos graves y contraseñas de fábrica conocidas: actualízalo, cambia la contraseña y no lo "
+            "abras hacia Internet.",
+        )
+    databases = [catalog.PORTS[p][0] for p in (3306, 5432, 6379, 27017) if p in ports]
+    if databases:
+        note(
+            MEDIA,
+            f"Tiene una base de datos abierta a toda la red ({', '.join(databases)}). Si solo la usa este "
+            "aparato, que escuche solo en localhost; Redis y MongoDB vienen muchas veces sin contraseña.",
         )
     if 5900 in ports:
         note(MEDIA, "Deja ver y manejar su pantalla a distancia (VNC). Que tenga una buena contraseña.")

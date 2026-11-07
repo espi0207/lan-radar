@@ -129,6 +129,13 @@ def devices() -> list[Device]:
             ports=[23, 80, 554],
             web={"80": {"status": "200", "server": "webs", "title": "Web Client"}},
         ),
+        Device("192.168.1.90", "B0:4A:39:3C:7D:21", dns_name="roborock-vacuum-a15.home"),
+        Device(
+            "192.168.1.95",
+            "08:00:27:5E:11:C4",
+            netbios_name="WS2022-DC01",
+            ports=[53, 135, 445, 3389],
+        ),
         Device("192.168.1.112", "3A:F1:07:C2:55:9E"),
     ]
 

@@ -26,8 +26,9 @@ def isolated(tmp_path, monkeypatch):
 def test_demo(capsys):
     assert cli.main(["--demo"]) == 0
     out = capsys.readouterr().out
-    assert "15 aparatos" in out and "iPhone de Ana" in out and "← nuevo" in out
+    assert "17 aparatos" in out and "iPhone de Ana" in out and "← nuevo" in out
     assert "Telnet" in out and "Portátil de Juan" in out
+    assert "Robot aspirador" in out and "Máquina virtual" in out
 
 
 def test_demo_con_detalle(capsys):
